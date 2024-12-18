@@ -1,33 +1,21 @@
-from fastapi import FastAPI, File, UploadFile
+from google.cloud import storage
 from keras.models import load_model
-import numpy as np
-from PIL import Image
-import io
+import tempfile
 
-# Load the trained model
-model_path = 'your_trained_model.keras'
-model = load_model(model_path)
+# Function to load the model from Google Cloud Storage
+def load_model_from_gcs(model_path):
+    client = storage.Client()
+    bucket = client.get_bucket('tree-decorator-model')  # Your bucket name
+    blob = bucket.blob(model_path)  # Path to your model in the bucket
 
-# Initialize FastAPI app
-app = FastAPI()
-
-# Function to make predictions
-def predict(image: Image.Image):
-    image = image.resize((224, 224))  # Resize to match model input
-    image_array = np.array(image) / 255.0  # Normalize the image
-    image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension
-    prediction = model.predict(image_array)  # Make prediction
-    return prediction.tolist()  # Convert numpy array to list for JSON response
-
-# Route for predicting on an uploaded image
-@app.post("/predict/")
-async def predict_image(file: UploadFile = File(...)):
-    # Read image from the uploaded file
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
-
-    # Make prediction
-    prediction = predict(image)
+    # Save the model file locally in a temporary file
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        blob.download_to_filename(temp_file.name)  # Download model to temporary file
+        model = load_model(temp_file.name)  # Load model from the temporary file
     
-    # Return the prediction
-    return {"prediction": prediction}
+    return model
+
+# Load the model from Google Cloud Storage (provide the path to your model in the bucket)
+model = load_model_from_gcs('models/your_trained_model.keras')  # Update with your model path in GCS
+
+# Now you can use the 'model' object for predictions or further processing
