@@ -1,6 +1,5 @@
-fastapi==0.95.1
-uvicorn==0.22.0
+Flask==2.3.2
 google-cloud-storage==2.10.0
-pydantic==1.10.7
-aiofiles==23.1.0
+keras==2.13.1
 tensorflow==2.13.0
+gunicorn==20.1.0  # For running the app in production on Google Cloud Run
